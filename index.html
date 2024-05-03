@@ -78,8 +78,8 @@
             this.menu.hide();
           });
 
-          this.container.on("click", ".badge", (e) => {
-            $(e.target).remove();
+          this.container.on("click", ".badge .close", (e) => {
+            $(e.target).closest('.badge').remove();
           });
         }
 
@@ -97,7 +97,7 @@
 
         addBadge(value) {
           const badge = $(
-            `<span class="badge bg-primary">${value}<span class="ms-2">&times;</span></span>`
+            `<span class="badge bg-primary">${value}<span class="ms-2 close">&times;</span></span>`
           );
           badge.insertBefore(this.input);
         }
