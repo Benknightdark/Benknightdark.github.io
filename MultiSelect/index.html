@@ -283,6 +283,7 @@
             .map((_, badge) => $(badge).data("value"))
             .get()
             .join(",");
+          this.#currentValues = this.resultInput.val();
           this.resultInput
             .val(values)
             .trigger(this.optionChangedEvent, [values]);
@@ -292,7 +293,6 @@
         }
         showDropdown() {
           this.menu.addClass("show");
-          this.#currentValues = this.resultInput.val();
         }
       }
 
@@ -305,8 +305,7 @@
           }
         ).on(dropdown.dropdownDestroyEvent, (event, prevValues, currentValues) => {
           $("#prevValues").val(prevValues);
-          $("#currentValues").val(currentValues);
-          
+          $("#currentValues").val(currentValues);          
         });
       });
     </script>
