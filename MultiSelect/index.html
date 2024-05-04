@@ -9,13 +9,9 @@
       rel="stylesheet"
     />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
+
     <style>
-      .dropdown-menu {
-        display: none;
-        max-height: 200px;
-        overflow-y: auto;
-      }
+      /* Select container styling */
       .select-container {
         border: 1px solid #ced4da;
         padding: 0.375rem 0.75rem;
@@ -24,14 +20,64 @@
         flex-wrap: wrap;
         gap: 0.5rem;
         align-items: center;
+        background-color: #f8f9fa;
+        cursor: pointer;
       }
+
+      /* Input field styling */
       .select-container input {
         border: none;
         outline: none;
         flex-grow: 1;
         min-width: 120px;
+        font-size: 16px;
       }
+
+      /* Dropdown menu styling */
+      .dropdown-menu {
+        display: none;
+        position: absolute;
+        width: 100%;
+        background-color: #ffffff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 0.25rem;
+        z-index: 1000;
+        max-height: 200px;
+        overflow-y: auto;
+        margin-top: 4px;
+      }
+
+      /* Dropdown item styling */
+      .dropdown-menu li {
+        list-style: none;
+      }
+
+      .dropdown-menu a {
+        display: block;
+        padding: 8px 12px;
+        text-decoration: none;
+        color: #333;
+        transition: background-color 0.3s;
+      }
+
+      .dropdown-menu a:hover {
+        background-color: #f0f0f0;
+      }
+
+      /* Custom badge styling */
       .badge {
+        display: inline-block;
+        padding: 6px 12px;
+        background-color: #007bff;
+        color: white;
+        border-radius: 20px;
+        margin-right: 5px;
+        font-size: 14px;
+      }
+
+      .badge .close {
+        margin-left: 8px;
+        color: white;
         cursor: pointer;
       }
     </style>
@@ -62,6 +108,7 @@
           this.input = this.container.find("input[type='text']");
           this.resultInput = this.container.find("#searchResult"); // 獲取隱藏的 input
           this.menu = this.container.find(".dropdown-menu");
+          console.log(this.menu);
           this.selectedIndex = -1;
           this.initEvents();
         }
