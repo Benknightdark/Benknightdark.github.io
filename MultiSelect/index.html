@@ -9,6 +9,7 @@
       rel="stylesheet"
     />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
     <style>
       .dropdown-menu {
         display: none;
@@ -37,7 +38,7 @@
   </head>
   <body>
     <div class="container mt-5">
-      <div class="dropdown">
+      <div class="dropdown" data-value-field="id" data-text-field="title">
         <div class="select-container">
           <input
             type="text"
@@ -47,134 +48,176 @@
             aria-expanded="false"
             placeholder="開始搜尋..."
           />
+          <input type="hidden" id="searchResult" />
         </div>
         <ul class="dropdown-menu w-100" aria-labelledby="searchInput"></ul>
       </div>
     </div>
 
     <script>
-        class Select2Dropdown {
-          constructor(options, selector) {
-              this.options = options;
-              this.container = $(selector);
-              this.input = this.container.find("input");
-              this.menu = this.container.find(".dropdown-menu");
-              this.selectedIndex = -1;
-              this.initEvents();
-          }
+      class Select2Dropdown {
+        constructor(selector = null) {
+          this.container = selector === null ? $(".dropdown") : $(selector);
+          this.textfield = this.container.data("text-field");
+          this.valuefield = this.container.data("value-field");
+          this.input = this.container.find("input[type='text']");
+          this.resultInput = this.container.find("#searchResult"); // 獲取隱藏的 input
+          this.menu = this.container.find(".dropdown-menu");
+          this.selectedIndex = -1;
+          this.initEvents();
+        }
 
-          initEvents() {
-              this.input.on("keydown", (e) => {
-                  // 處理 Backspace 鍵在輸入框為空的情況
-                  if (e.key === "Backspace" && this.input.val() === "") {
-                      this.removeLastBadge();
-                      e.preventDefault(); // 防止更多的鍵盤事件處理
-                  }
-                  if (["ArrowDown", "ArrowUp", "Enter", "Escape"].includes(e.key)) {
-                      this.handleKeyboardNavigation(e.key);
-                  } else {
-                      setTimeout(() => {
-                          const searchText = this.input.val();
-                          this.populateMenu(searchText);
-                          if (searchText.length > 0) {
-                              this.menu.show();
-                          } else {
-                              this.menu.hide();
-                          }
-                      });
-                  }
-              });
-
-              this.container.on("click", ".dropdown-item", (e) => {
-                  e.preventDefault();
-                  this.selectItem($(e.target));
-              });
-
-              this.container.on("click", ".badge .close", (e) => {
-                  $(e.target).closest('.badge').remove();
-              });
-
-              $(document).on("click", (e) => {
-                  if (!this.container.is(e.target) && this.container.has(e.target).length === 0) {
-                      this.menu.hide();
-                  }
-              });
-
-              $(document).on("keydown", (e) => {
-                  if (e.key === "Escape") {
-                      this.menu.hide();
-                  }
-              });
-          }
-
-          populateMenu(searchText) {
-              this.menu.empty();
-              const filteredOptions = this.options.filter((option) =>
-                  option.toLowerCase().includes(searchText.toLowerCase())
-              );
-              filteredOptions.forEach((option, index) => {
-                  this.menu.append(
-                      `<li><a class="dropdown-item" href="#" data-index="${index}">${option}</a></li>`
-                  );
-              });
-              if (filteredOptions.length === 1) {
-                  this.selectedIndex = 0;
-                  this.updateSelectedItem();
-              } else {
-                  this.selectedIndex = -1;
-              }
-              // 不顯示空的 menu
-              if (searchText.trim().length === 0 || filteredOptions.length === 0) {
+        initEvents() {
+          this.input.on("keydown", async (e) => {
+            if (e.key === "Backspace" && this.input.val() === "") {
+              this.removeLastBadge();
+              e.preventDefault();
+            }
+            if (["ArrowDown", "ArrowUp", "Enter", "Escape"].includes(e.key)) {
+              this.handleKeyboardNavigation(e.key);
+            } else {
+              setTimeout(async () => {
+                const fetchProduct = await fetch(
+                  "https://dummyjson.com/products"
+                );
+                this.options = (await fetchProduct.json())["products"];
+                const searchText = this.input.val();
+                this.populateMenu(searchText);
+                if (searchText.length > 0) {
+                  this.menu.show();
+                } else {
                   this.menu.hide();
-              }
-          }
+                }
+              }, 1);
+            }
+          });
 
-          handleKeyboardNavigation(key) {
-              const items = this.menu.find(".dropdown-item");
-              if (key === "ArrowDown") {
-                  this.selectedIndex = (this.selectedIndex + 1) % items.length;
-                  this.updateSelectedItem();
-              } else if (key === "ArrowUp") {
-                  this.selectedIndex = (this.selectedIndex - 1 + items.length) % items.length;
-                  this.updateSelectedItem();
-              } else if (key === "Enter" && this.selectedIndex !== -1) {
-                  this.selectItem(items.eq(this.selectedIndex));
-              } else if (key === "Escape") {
-                  this.menu.hide();
-              }
-          }
+          this.container.on("click", ".dropdown-item", (e) => {
+            e.preventDefault();
+            this.selectItem($(e.target));
+          });
 
-          updateSelectedItem() {
-              this.menu.find(".dropdown-item.active").removeClass("active");
-              this.menu.find(".dropdown-item").eq(this.selectedIndex).addClass("active");
-          }
+          this.container.on("click", ".badge .close", (e) => {
+            this.removeBadge($(e.target).closest(".badge"));
+          });
 
-          selectItem(item) {
-              const value = item.text();
-              this.addBadge(value);
-              this.input.val("").focus();
-              this.populateMenu("");
+          $(document).on("click", (e) => {
+            if (
+              !this.container.is(e.target) &&
+              this.container.has(e.target).length === 0
+            ) {
               this.menu.hide();
-          }
+            }
+          });
 
-          addBadge(value) {
-              const badge = $(
-                  `<span class="badge bg-primary">${value}<span class="ms-2 close">&times;</span></span>`
-              );
-              badge.insertBefore(this.input);
-          }
+          $(document).on("keydown", (e) => {
+            if (e.key === "Escape") {
+              this.menu.hide();
+            }
+          });
+        }
 
-          removeLastBadge() {
-              const lastBadge = this.container.find('.badge').last();
-              if (lastBadge.length) {
-                  lastBadge.remove();
-              }
+        populateMenu(searchText) {
+          this.menu.empty();
+          const filteredOptions = this.options.filter((option) =>
+            option[this.textfield]
+              .toLowerCase()
+              .includes(searchText.toLowerCase())
+          );
+          filteredOptions.forEach((option, index) => {
+            this.menu.append(
+              `<li><a class="dropdown-item" href="#" data-value="${
+                option[this.valuefield]
+              }">${option[this.textfield]}</a></li>`
+            );
+          });
+          if (filteredOptions.length === 1) {
+            this.selectedIndex = 0;
+            this.updateSelectedItem();
+          } else {
+            this.selectedIndex = -1;
           }
+          if (searchText.trim().length === 0 || filteredOptions.length === 0) {
+            this.menu.hide();
+          }
+        }
+
+        handleKeyboardNavigation(key) {
+          const items = this.menu.find(".dropdown-item");
+          if (key === "ArrowDown") {
+            this.selectedIndex = (this.selectedIndex + 1) % items.length;
+            this.updateSelectedItem();
+          } else if (key === "ArrowUp") {
+            this.selectedIndex =
+              (this.selectedIndex - 1 + items.length) % items.length;
+            this.updateSelectedItem();
+          } else if (key === "Enter" && this.selectedIndex !== -1) {
+            this.selectItem(items.eq(this.selectedIndex));
+          } else if (key === "Escape") {
+            this.menu.hide();
+          }
+        }
+
+        updateSelectedItem() {
+          this.menu.find(".dropdown-item.active").removeClass("active");
+          this.menu
+            .find(".dropdown-item")
+            .eq(this.selectedIndex)
+            .addClass("active");
+        }
+
+        selectItem(item) {
+          const text = item.text();
+          const value = item.data("value");
+          // 避免重複選取
+          if (
+            this.resultInput
+              .val()
+              .split(",")
+              .filter((a) => a === value.toString()).length > 0
+          ) {
+            return;
+          }
+          this.addBadge(text, value);
+          this.input.val("").focus();
+          this.populateMenu("");
+          this.menu.hide();
+        }
+
+        addBadge(text, value) {
+          const badge = $(
+            `<span class="badge bg-primary">${text}<span class="ms-2 close">&times;</span></span>`
+          );
+          badge.insertBefore(this.input);
+          badge.data("value", value); // 儲存 value 到 badge
+
+          this.updateResultInput();
+        }
+
+        removeBadge(badge) {
+          badge.remove();
+          this.updateResultInput();
+        }
+        removeLastBadge() {
+          const lastBadge = this.container.find(".badge").last();
+          if (lastBadge.length) {
+            lastBadge.remove();
+          }
+          this.updateResultInput(); // 更新結果輸入以反映最新的 badges
+        }
+
+        updateResultInput() {
+          const values = this.container
+            .find(".badge")
+            .map((_, badge) => $(badge).data("value"))
+            .get()
+            .join(",");
+          this.resultInput.val(values);
+        }
       }
 
       $(document).ready(() => {
-          const options = ["選項 1", "選項 2", "選項 3", "選項 4"];
-          const dropdown = new Select2Dropdown(options, ".dropdown");
+        const dropdown = new Select2Dropdown();
       });
     </script>
   </body>
