@@ -82,7 +82,11 @@
   </head>
   <body>
     <div class="container mt-5">
-      <div class="multi-select-R99AV" data-value-field="id" data-text-field="title">
+      <div
+        class="multi-select-R99AV"
+        data-value-field="id"
+        data-text-field="title"
+      >
         <div class="select-container">
           <input
             type="text"
@@ -95,12 +99,29 @@
         </div>
         <ul class="dropdown-menu w-100" aria-labelledby="searchInput"></ul>
       </div>
+      <div class="mt-3">
+        <label for="result" class="form-label">選取結果的ids</label>
+        <input type="text" class="form-control" id="result" readonly />
+      </div>
+      <div class="mt-3 row">
+        <div class="col">
+          <label for="prevValues" class="form-label">上一次選取的ids</label>
+          <input type="text" class="form-control" id="prevValues" readonly />
+        </div>
+        <div class="col">
+          <label for="currentValues" class="form-label">目前選取的ids</label>
+          <input type="text" class="form-control" id="currentValues" readonly />
+      </div>
     </div>
 
     <script>
-      class Select2Dropdown {       
+      class Select2Dropdown {
+        optionChangedEvent = "option:changed";
+        dropdownDestroyEvent = "dropdown:destroy";
+        #currentValues='';
         constructor(selector = null) {
-          this.container = selector === null ? $(".multi-select-R99AV") : $(selector);
+          this.container =
+            selector === null ? $(".multi-select-R99AV") : $(selector);
           this.textfield = this.container.data("text-field");
           this.valuefield = this.container.data("value-field");
           this.input = this.container.find("input[type='text']");
@@ -110,7 +131,6 @@
           this.selectedIndex = -1;
           this.initEvents();
         }
-
 
         initEvents() {
           this.input.on("keydown", async (e) => {
@@ -130,9 +150,11 @@
                 this.populateMenu(searchText);
                 // 確保適當時候顯示或隱藏選單
                 if (searchText.length > 0) {
-                  this.menu.addClass("show");
+                  //this.menu.addClass("show");
+                  this.showDropdown();
                 } else {
-                  this.menu.removeClass("show");
+                 // this.hideDropdown();
+                 this.hideDropdown();
                 }
               }, 1);
             }
@@ -152,18 +174,18 @@
               !this.container.is(e.target) &&
               this.container.has(e.target).length === 0
             ) {
-              this.menu.removeClass("show");
+              this.hideDropdown();
             }
           });
           $(document).on("click", (e) => {
             if (!$(e.target).closest(".dropdown").length) {
-              this.menu.removeClass("show");
+              this.hideDropdown();
             }
           });
 
           $(document).on("keydown", (e) => {
             if (e.key === "Escape") {
-              this.menu.removeClass("show");
+              this.hideDropdown();
             }
           });
         }
@@ -185,11 +207,11 @@
 
           // 根據是否有篩選結果決定是否顯示選單
           if (searchText.trim().length > 0 && filteredOptions.length > 0) {
-            this.menu.addClass("show");
+            this.showDropdown();
             this.selectedIndex = 0;
             this.updateSelectedItem();
           } else {
-            this.menu.removeClass("show");
+            this.hideDropdown();
           }
         }
 
@@ -205,7 +227,7 @@
           } else if (key === "Enter" && this.selectedIndex !== -1) {
             this.selectItem(items.eq(this.selectedIndex));
           } else if (key === "Escape") {
-            this.menu.removeClass("show");
+            this.hideDropdown();
           }
         }
 
@@ -232,7 +254,7 @@
           this.addBadge(text, value);
           this.input.val("").focus();
           this.populateMenu("");
-          this.menu.removeClass("show");
+          this.hideDropdown();
         }
 
         addBadge(text, value) {
@@ -241,7 +263,6 @@
           );
           badge.insertBefore(this.input);
           badge.data("value", value); // 儲存 value 到 badge
-
           this.updateResultInput();
         }
 
@@ -256,19 +277,37 @@
           }
           this.updateResultInput(); // 更新結果輸入以反映最新的 badges
         }
-
         updateResultInput() {
           const values = this.container
             .find(".badge")
             .map((_, badge) => $(badge).data("value"))
             .get()
             .join(",");
-          this.resultInput.val(values);
+          this.resultInput
+            .val(values)
+            .trigger(this.optionChangedEvent, [values]);
+        }
+        hideDropdown() {
+          this.menu.removeClass("show").trigger(this.dropdownDestroyEvent,[this.#currentValues, this.resultInput.val()]);
+        }
+        showDropdown() {
+          this.menu.addClass("show");
+          this.#currentValues = this.resultInput.val();
         }
       }
 
       $(document).ready(() => {
         const dropdown = new Select2Dropdown();
+        $(".multi-select-R99AV").on(
+          dropdown.optionChangedEvent,
+          (event, values) => {
+            $("#result").val(values);
+          }
+        ).on(dropdown.dropdownDestroyEvent, (event, prevValues, currentValues) => {
+          $("#prevValues").val(prevValues);
+          $("#currentValues").val(currentValues);
+          
+        });
       });
     </script>
   </body>
