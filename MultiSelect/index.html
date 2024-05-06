@@ -139,30 +139,23 @@
               e.preventDefault();
             }
             if (["ArrowDown", "ArrowUp", "Enter", "Escape"].includes(e.key)) {
-              this.handleKeyboardNavigation(e.key);
+              await this.handleKeyboardNavigation(e.key);
             } else {
               setTimeout(async () => {
-                const fetchProduct = await fetch(
-                  "https://dummyjson.com/products"
-                );
-                this.options = (await fetchProduct.json())["products"];
                 const searchText = this.input.val();
-                this.populateMenu(searchText);
-                // 確保適當時候顯示或隱藏選單
+                await this.populateMenu(searchText);
                 if (searchText.length > 0) {
-                  //this.menu.addClass("show");
                   this.showDropdown();
                 } else {
-                 // this.hideDropdown();
                  this.hideDropdown();
                 }
               }, 1);
             }
           });
 
-          this.container.on("click", ".dropdown-item", (e) => {
+          this.container.on("click", ".dropdown-item", async (e) => {
             e.preventDefault();
-            this.selectItem($(e.target));
+            await this.selectItem($(e.target));
           });
 
           this.container.on("click", ".badge .close", (e) => {
@@ -178,7 +171,7 @@
             }
           });
           $(document).on("click", (e) => {
-            if (!$(e.target).closest(".dropdown").length) {
+            if (!$(e.target).closest(".multi-select-R99AV").length) {
               this.hideDropdown();
             }
           });
@@ -190,32 +183,44 @@
           });
         }
 
-        populateMenu(searchText) {
-          this.menu.empty();
-          const filteredOptions = this.options.filter((option) =>
-            option[this.textfield]
-              .toLowerCase()
-              .includes(searchText.toLowerCase())
-          );
-          filteredOptions.forEach((option) => {
-            this.menu.append(
-              `<li><a class="dropdown-item" href="#" data-value="${
-                option[this.valuefield]
-              }">${option[this.textfield]}</a></li>`
+        async populateMenu(searchText) {
+          try
+          {
+            const fetchProduct = await fetch(
+              "https://dummyjson.com/products"
             );
-          });
-
-          // 根據是否有篩選結果決定是否顯示選單
-          if (searchText.trim().length > 0 && filteredOptions.length > 0) {
-            this.showDropdown();
-            this.selectedIndex = 0;
-            this.updateSelectedItem();
-          } else {
-            this.hideDropdown();
+            this.options = (await fetchProduct.json())["products"];
+            
+            this.menu.empty();
+            const filteredOptions = this.options.filter((option) =>
+              option[this.textfield]
+                .toLowerCase()
+                .includes(searchText.toLowerCase())
+            );
+            filteredOptions.forEach((option) => {
+              this.menu.append(
+                `<li><a class="dropdown-item" href="#" data-value="${
+                  option[this.valuefield]
+                }">${option[this.textfield]}</a></li>`
+              );
+            });
+  
+            // 根據是否有篩選結果決定是否顯示選單
+            if (searchText.trim().length > 0 && filteredOptions.length > 0) {
+              this.showDropdown();
+              this.selectedIndex = 0;
+              this.updateSelectedItem();
+            } else {
+              this.hideDropdown();
+            }
+          }
+          catch(e)
+          {
+            console.error(e);
           }
         }
 
-        handleKeyboardNavigation(key) {
+        async handleKeyboardNavigation(key) {
           const items = this.menu.find(".dropdown-item");
           if (key === "ArrowDown") {
             this.selectedIndex = (this.selectedIndex + 1) % items.length;
@@ -225,7 +230,7 @@
               (this.selectedIndex - 1 + items.length) % items.length;
             this.updateSelectedItem();
           } else if (key === "Enter" && this.selectedIndex !== -1) {
-            this.selectItem(items.eq(this.selectedIndex));
+            await this.selectItem(items.eq(this.selectedIndex));
           } else if (key === "Escape") {
             this.hideDropdown();
           }
@@ -239,7 +244,7 @@
             .addClass("active");
         }
 
-        selectItem(item) {
+        async selectItem(item) {
           const text = item.text();
           const value = item.data("value");
           // 避免重複選取
@@ -253,7 +258,7 @@
           }
           this.addBadge(text, value);
           this.input.val("").focus();
-          this.populateMenu("");
+          await this.populateMenu("");
           this.hideDropdown();
         }
 
@@ -270,6 +275,7 @@
           badge.remove();
           this.updateResultInput();
         }
+        
         removeLastBadge() {
           const lastBadge = this.container.find(".badge").last();
           if (lastBadge.length) {
@@ -277,6 +283,7 @@
           }
           this.updateResultInput(); // 更新結果輸入以反映最新的 badges
         }
+        
         updateResultInput() {
           const values = this.container
             .find(".badge")
@@ -288,25 +295,29 @@
             .val(values)
             .trigger(this.optionChangedEvent, [values]);
         }
+        
         hideDropdown() {
           this.menu.removeClass("show").trigger(this.dropdownDestroyEvent,[this.#currentValues, this.resultInput.val()]);
         }
+        
         showDropdown() {
           this.menu.addClass("show");
         }
       }
 
       $(document).ready(() => {
-        const dropdown = new Select2Dropdown();
-        $(".multi-select-R99AV").on(
-          dropdown.optionChangedEvent,
-          (event, values) => {
-            $("#result").val(values);
-          }
-        ).on(dropdown.dropdownDestroyEvent, (event, prevValues, currentValues) => {
-          $("#prevValues").val(prevValues);
-          $("#currentValues").val(currentValues);          
-        });
+        $(".multi-select-R99AV").each((index,el)=>{
+          const dropdown = new Select2Dropdown($(el));
+            $(el).on(
+              dropdown.optionChangedEvent,
+              (event, values) => {
+                $("#result").val(values);
+              }
+            ).on(dropdown.dropdownDestroyEvent, (event, prevValues, currentValues) => {
+              $("#prevValues").val(prevValues);
+              $("#currentValues").val(currentValues);          
+            });      
+        })      
       });
     </script>
   </body>
